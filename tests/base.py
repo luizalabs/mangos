@@ -6,7 +6,7 @@ import codecs
 import os
 
 from tornado.testing import AsyncTestCase
-from braspag import BraspagRequest
+from braspag_rest import BraspagRequest
 from .asyncreplay import asyncreplay
 
 
