@@ -19,7 +19,8 @@ from tornado import gen
 
 
 class BaseRequest(object):
-    def __init__(self, merchant_id=None, merchant_key=None, homologation=False, request_timeout=10):
+    def __init__(self, merchant_id=None, merchant_key=None, homologation=False,
+                 request_timeout=10):
         self.merchant_id = merchant_id
         self.merchant_key = merchant_key
 
@@ -40,7 +41,7 @@ class BaseRequest(object):
 
     def ensure_json(self, payload):
         if not payload:
-            return None 
+            return None
 
         if isinstance(payload, str):
             return payload
@@ -56,7 +57,9 @@ class BaseRequest(object):
         """Return an instance of HTTPRequest with optionally custom headers.
         The body is automatically encoded to json if it's not already.
         """
-        headers = kwargs.get('headers') or self.headers(kwargs.get('request_id'))
+        headers = kwargs.get('headers') or self.headers(
+            kwargs.get('request_id')
+        )
 
         return HTTPRequest(
             url=url,
@@ -73,12 +76,13 @@ class BaseRequest(object):
             'message': error['Message']
         }
 
-
     @gen.coroutine
     def fetch(self, url, method, payload, **kwargs):
         self.log.warning('Request: %s' % payload)
         try:
-            response = yield self.http_client.fetch(self._get_request(url, method, payload, **kwargs))
+            response = yield self.http_client.fetch(
+                self._get_request(url, method, payload, **kwargs)
+            )
         except HTTPError as e:
             if e.code == 599:
                 raise HTTPTimeoutError(e.code, e.message)
@@ -87,7 +91,11 @@ class BaseRequest(object):
 
             raise HTTPError(e.code, e.message)
 
-        self.log.warning('Response code: %s body: %s' % (response.code, response.body))
+        self.log.warning(
+            'Response code: {} body: {}'.format(
+                response.code, response.body
+            )
+        )
         raise gen.Return(response)
 
 
@@ -97,8 +105,10 @@ class BraspagRequest(BaseRequest):
     DOCS: http://apidocs.braspag.com.br
     """
 
-    def __init__(self, merchant_id=None, merchant_key=None, homologation=False, request_timeout=10):
-        super(BraspagRequest, self).__init__(merchant_id, merchant_key, request_timeout)
+    def __init__(self, merchant_id=None, merchant_key=None, homologation=False,
+                 request_timeout=10):
+        super(BraspagRequest, self).__init__(merchant_id, merchant_key,
+                                             request_timeout)
         if homologation:
             self.query_url = 'https://apiqueryhomolog.braspag.com.br'
             self.transaction_url = 'https://apihomolog.braspag.com.br'
@@ -128,12 +138,19 @@ class BraspagRequest(BaseRequest):
 
         :arg transaction_id: The id of the transaction
         """
-        assert is_valid_guid(kwargs.get('transaction_id')), 'Invalid Transaction ID'
+        trasaction_id = kwargs.get('transaction_id')
+        assert is_valid_guid(trasaction_id), 'Invalid Transaction ID'
 
         resource = '/v2/sales/{0}'.format(kwargs.get('transaction_id', ''))
 
         try:
-            response = yield self._request(resource, 'GET', kwargs.get('payload'), query=True, **kwargs)
+            response = yield self._request(
+                resource,
+                'GET',
+                kwargs.get('payload'),
+                query=True,
+                **kwargs
+            )
         except BraspagException as e:
             error_body = json.loads(e.response.body)
             raise gen.Return(self.format_error(error_body))
@@ -154,70 +171,84 @@ class BraspagResponse(object):
             data = {
                 'status': int(transaction.get('Status')),
                 'braspag_transaction_id': transaction.get('PaymentId'),
-                'acquirer_transaction_id': transaction.get('AcquirerTransactionId'),
+                'acquirer_transaction_id': transaction.get(
+                    'AcquirerTransactionId'
+                ),
                 'authorization_code': transaction.get('AuthorizationCode'),
                 'proof_of_sale': transaction.get('ProofOfSale'),
             }
 
-            if transaction.has_key('Amount'):
+            credit_card = transaction.get('CreditCard', {})
+
+            if 'Amount' in transaction:
                 data['amount'] = int(transaction.get('Amount'))
 
-            if transaction.get('CreditCard', {}).has_key('CardNumber'):
-                data['masked_credit_card_number'] = transaction['CreditCard'].get('CardNumber')
+            if 'CardNumber' in credit_card:
+                data['masked_credit_card_number'] = credit_card.get(
+                    'CardNumber'
+                )
 
-            if transaction.get('CreditCard', {}).has_key('Brand'):
-                data['payment_method_name'] = transaction['CreditCard'].get('Brand')
+            if 'Brand' in credit_card:
+                data['payment_method_name'] = credit_card.get('Brand')
 
-            if transaction.get('CreditCard', {}).has_key('Holder'):
-                data['holder_name'] = transaction['CreditCard'].get('Holder')
+            if 'Holder' in credit_card:
+                data['holder_name'] = credit_card.get('Holder')
 
-            if transaction.get('CreditCard', {}).has_key('ExpirationDate'):
-                data['expiration_date'] = transaction['CreditCard'].get('ExpirationDate')
+            if 'ExpirationDate' in credit_card:
+                data['expiration_date'] = credit_card.get('ExpirationDate')
 
-            if transaction.has_key('ReturnCode'):
+            if 'ReturnCode' in transaction:
                 data['return_code'] = transaction.get('ReturnCode')
 
-            if transaction.has_key('ReturnMessage'):
+            if 'ReturnMessage' in transaction:
                 data['return_message'] = transaction.get('ReturnMessage')
 
-            if transaction.has_key('Provider'):
+            if 'Provider' in transaction:
                 data['payment_method'] = transaction.get('Provider')
 
-            if transaction.has_key('Capture'):
+            if 'Capture' in transaction:
                 data['capture'] = transaction.get('Capture')
 
-            if transaction.has_key('Authenticate'):
+            if 'Authenticate' in transaction:
                 data['autenticate'] = transaction.get('Authenticate')
 
-            if transaction.has_key('Type'):
+            if 'Type' in transaction:
                 data['transaction_type'] = transaction.get('Type')
 
-            if transaction.has_key('Installments'):
+            if 'Installments' in transaction:
                 data['installments'] = int(transaction.get('Installments'))
 
-            if transaction.has_key('Country'):
+            if 'Country' in transaction:
                 data['country'] = transaction.get('Country')
 
-            if transaction.has_key('ServiceTaxAmount'):
-                data['service_tax_amount'] = int(transaction.get('ServiceTaxAmount'))
+            if 'ServiceTaxAmount' in transaction:
+                data['service_tax_amount'] = int(
+                    transaction.get('ServiceTaxAmount')
+                )
 
-            if transaction.has_key('ReceivedDate'):
-                data['received_date'] = datetime.strptime(transaction.get('ReceivedDate'), '%Y-%m-%d %H:%M:%S')
+            if 'ReceivedDate' in transaction:
+                data['received_date'] = datetime.strptime(
+                    transaction.get('ReceivedDate'), '%Y-%m-%d %H:%M:%S'
+                )
 
-            if transaction.has_key('Interest'):
+            if 'Interest' in transaction:
                 data['interest'] = transaction.get('Interest')
 
-            if transaction.has_key('ReasonCode'):
+            if 'ReasonCode' in transaction:
                 data['reason_code'] = transaction.get('ReasonCode')
 
-            if transaction.has_key('ReasonMessage'):
+            if 'ReasonMessage' in transaction:
                 data['reason_message'] = transaction.get('ReasonMessage')
 
-            if transaction.has_key('ProviderReturnCode'):
-                data['acquirer_return_code'] = transaction.get('ProviderReturnCode')
+            if 'ProviderReturnCode' in transaction:
+                data['acquirer_return_code'] = transaction.get(
+                    'ProviderReturnCode'
+                )
 
-            if transaction.has_key('ProviderReturnMessage'):
-                data['acquirer_return_message'] = transaction.get('ProviderReturnMessage')
+            if 'ProviderReturnMessage' in transaction:
+                data['acquirer_return_message'] = transaction.get(
+                    'ProviderReturnMessage'
+                )
 
             transactions.append(data)
 
@@ -230,5 +261,7 @@ class BraspagResponse(object):
             'order_id': response.get('MerchantOrderId'),
         }
 
-        data['transaction'] = cls.format_transactions(response.get('Payment'))[0]
+        data['transaction'] = cls.format_transactions(
+            response.get('Payment')
+        )[0]
         return data

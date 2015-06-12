@@ -19,7 +19,9 @@ class BraspagTestCase(AsyncTestCase):
 
     def setUp(self):
         super(BraspagTestCase, self).setUp()
-        self.braspag = BraspagRequest(MERCHANT_ID, MERCHANT_KEY, homologation=HOMOLOGATION)
+        self.braspag = BraspagRequest(
+            MERCHANT_ID, MERCHANT_KEY, homologation=HOMOLOGATION
+        )
 
     def _test_name_for_replay_file(self):
         return self.__str__().split(' ')[0]

@@ -41,12 +41,16 @@ class ReplayRecording(object):
         return str(hashlib.md5(body and body or '').hexdigest())
 
     def __getitem__(self, request):
-        """Match requests by the tuple (url, method)
+        """
+        Match requests by the tuple (url, method)
         """
         body_hash = self.get_body_hash(request.body)
         for (rec_body_hash, rec_request, rec_response) in self.request_responses:
-            logger.debug('testing body hash %s -> %s -- url: %s -> %s method: %s -> %s\n' % (body_hash, rec_body_hash, request.url, rec_request['url'],
-                     request.method, rec_request['method']))
+            logger.debug(
+                'testing body hash %s -> %s -- url: %s -> %s method: %s -> %s\n' % (
+                    body_hash, rec_body_hash, request.url, rec_request['url'],
+                    request.method, rec_request['method'])
+                )
             if rec_body_hash == body_hash and \
                     rec_request['url'] == request.url and \
                     rec_request['method'] == request.method:
@@ -65,13 +69,16 @@ class ReplayRecording(object):
             return True
 
     def __setitem__(self, request, response):
-        self.request_responses.append((self.get_body_hash(request.body), request, response))
+        self.request_responses.append(
+            (self.get_body_hash(request.body), request, response)
+        )
 
     def to_jsonable(self):
         return [dict(
             body_hash=body_hash,
             request=request,
-            response=response) for body_hash, request, response in self.request_responses]
+            response=response
+        ) for body_hash, request, response in self.request_responses]
 
     def to_httpresponse(self, request):
         """Try and get a response that matches the request, create a HTTPResponse
@@ -97,17 +104,17 @@ class ReplayRecordingManager(object):
                 recording = ReplayRecording(json.load(fp))
         except IOError:
             logger.debug("ReplayRecordingManager starting new %r",
-                     os.path.basename(recording_file_name))
+                         os.path.basename(recording_file_name))
             recording = ReplayRecording()
         else:
             logger.debug("ReplayRecordingManager loaded from %r",
-                     os.path.basename(recording_file_name))
+                         os.path.basename(recording_file_name))
         return recording
 
     @classmethod
     def save(cls, recording, recording_file_name):
         logger.debug("ReplayRecordingManager saving to %r",
-                 os.path.basename(recording_file_name))
+                     os.path.basename(recording_file_name))
         dirname, _ = os.path.split(recording_file_name)
         if not os.path.exists(dirname):
             os.makedirs(dirname)
@@ -153,9 +160,15 @@ def async_replay_patch(fetch_mock, recordfile):
 
         skip_url_start = ['http://localhost', 'https://localhost']
         if any([request.url.startswith(s) for s in skip_url_start]):
-            logger.debug('Skipping recording requests to localhost. URL: {0}'.format(request.url))
+            logger.debug(
+                'Skipping recording requests to localhost. URL: {0}'.format(
+                    request.url
+                )
+            )
             try:
-                response = yield AsyncHTTPClient(force_instance=True).fetch(request)
+                response = yield AsyncHTTPClient(force_instance=True).fetch(
+                    request
+                )
             except HTTPError as e:
                 response = e.response
             raise gen.Return(response)
@@ -165,7 +178,10 @@ def async_replay_patch(fetch_mock, recordfile):
             try:
                 response = recording.to_httpresponse(request)
             except Exception as e:
-                logger.debug('Found recorded response, but cant parse it. Returning None.')
+                logger.debug(
+                    ('Found recorded response, but cant parse it. '
+                     'Returning None.')
+                )
                 raise gen.Return(None)
             else:
                 raise gen.Return(recording.to_httpresponse(request))
