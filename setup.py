@@ -11,7 +11,7 @@ readme = open(os.path.join(cwd, 'README.md')).read()
 
 setup(
     name='mangos',
-    version='0.0.2',
+    version='0.0.3',
     description="Tornado library to consume Braspag REST Web services",
     long_description=readme,
     author='Daniel Urbano',

@@ -6,6 +6,7 @@ import json
 import uuid
 import logging
 import urlparse
+from datetime import datetime
 
 from .utils import is_valid_guid
 from .exceptions import BraspagException
@@ -120,4 +121,98 @@ class BraspagRequest(BaseRequest):
         resource = '/v2/sales/{0}'.format(kwargs.get('transaction_id', ''))
 
         response = yield self._request(resource, 'GET', kwargs.get('payload'), query=True, **kwargs)
+        response = BraspagResponse.format_get_transaction_data(response)
+
         raise gen.Return(response)
+
+
+class BraspagResponse(object):
+    @classmethod
+    def format_transactions(cls, braspag_transactions):
+        transactions = []
+
+        if not isinstance(braspag_transactions, list):
+            braspag_transactions = [braspag_transactions]
+
+        for transaction in braspag_transactions:
+            data = {
+                'status': int(transaction.get('Status')),
+                'braspag_transaction_id': transaction.get('PaymentId'),
+                'acquirer_transaction_id': transaction.get('AcquirerTransactionId'),
+                'authorization_code': transaction.get('AuthorizationCode'),
+                'proof_of_sale': transaction.get('ProofOfSale'),
+            }
+
+            if transaction.has_key('Amount'):
+                data['amount'] = int(transaction.get('Amount'))
+
+            if transaction.get('CreditCard', {}).has_key('CardNumber'):
+                data['masked_credit_card_number'] = transaction['CreditCard'].get('CardNumber')
+
+            if transaction.get('CreditCard', {}).has_key('Brand'):
+                data['payment_method_name'] = transaction['CreditCard'].get('Brand')
+
+            if transaction.get('CreditCard', {}).has_key('Holder'):
+                data['holder_name'] = transaction['CreditCard'].get('Holder')
+
+            if transaction.get('CreditCard', {}).has_key('ExpirationDate'):
+                data['expiration_date'] = transaction['CreditCard'].get('ExpirationDate')
+
+            if transaction.has_key('ReturnCode'):
+                data['return_code'] = transaction.get('ReturnCode')
+
+            if transaction.has_key('ReturnMessage'):
+                data['return_message'] = transaction.get('ReturnMessage')
+
+            if transaction.has_key('Provider'):
+                data['payment_method'] = transaction.get('Provider')
+
+            if transaction.has_key('Capture'):
+                data['capture'] = transaction.get('Capture')
+
+            if transaction.has_key('Authenticate'):
+                data['autenticate'] = transaction.get('Authenticate')
+
+            if transaction.has_key('Type'):
+                data['transaction_type'] = transaction.get('Type')
+
+            if transaction.has_key('Installments'):
+                data['installments'] = int(transaction.get('Installments'))
+
+            if transaction.has_key('Country'):
+                data['country'] = transaction.get('Country')
+
+            if transaction.has_key('ServiceTaxAmount'):
+                data['service_tax_amount'] = int(transaction.get('ServiceTaxAmount'))
+
+            if transaction.has_key('ReceivedDate'):
+                data['received_date'] = datetime.strptime(transaction.get('ReceivedDate'), '%Y-%m-%d %H:%M:%S')
+
+            if transaction.has_key('Interest'):
+                data['interest'] = transaction.get('Interest')
+
+            if transaction.has_key('ReasonCode'):
+                data['reason_code'] = transaction.get('ReasonCode')
+
+            if transaction.has_key('ReasonMessage'):
+                data['reason_message'] = transaction.get('ReasonMessage')
+
+            if transaction.has_key('ProviderReturnCode'):
+                data['acquirer_return_code'] = transaction.get('ProviderReturnCode')
+
+            if transaction.has_key('ProviderReturnMessage'):
+                data['acquirer_return_message'] = transaction.get('ProviderReturnMessage')
+
+            transactions.append(data)
+
+        return transactions
+
+    @classmethod
+    def format_get_transaction_data(cls, response):
+        data = {
+            'success': True,
+            'order_id': response.get('MerchantOrderId'),
+        }
+
+        data['transaction'] = cls.format_transactions(response.get('Payment'))[0]
+        return data

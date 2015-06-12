@@ -7,7 +7,7 @@ from tornado.testing import gen_test
 from tornado.httpclient import HTTPError
 
 
-REQUEST_ID = '782a56e2-2dae-11e2-b3ee-080027d29772'
+REQUEST_ID = u'782a56e2-2dae-11e2-b3ee-080027d29772'
 
 
 class GetTransactionDataTest(BraspagTestCase):
@@ -34,14 +34,12 @@ class GetTransactionDataTest(BraspagTestCase):
             request_id=REQUEST_ID
         )
 
-        self.assertTrue(response)
-        self.assertEquals(response['Customer']['Identity'], u'12345678900')
-        self.assertEquals(response['Customer']['Email'], u'jose123@dasilva.com.br')
-        self.assertEquals(response['Payment']['Status'], 1)
-        self.assertEquals(response['Payment']['Provider'], u'Simulado')
-        self.assertEquals(response['Payment']['Country'], u'BRA')
-        self.assertEquals(response['Payment']['CreditCard']['Brand'], u'Undefined')
-        self.assertEquals(response['Payment']['CreditCard']['CardNumber'], u'000000******0001')
-        self.assertEquals(response['Payment']['CreditCard']['Holder'], u'Jose da Silva')
-        self.assertEquals(response['Payment']['CreditCard']['ExpirationDate'], u'05/2018')
+        self.assertTrue(response['success'])
+        self.assertEquals(response['transaction']['status'], 1)
+        self.assertEquals(response['transaction']['payment_method'], u'Simulado')
+        self.assertEquals(response['transaction']['country'], u'BRA')
+        self.assertEquals(response['transaction']['payment_method_name'], u'Undefined')
+        self.assertEquals(response['transaction']['masked_credit_card_number'], u'000000******0001')
+        self.assertEquals(response['transaction']['holder_name'], u'Jose da Silva')
+        self.assertEquals(response['transaction']['expiration_date'], u'05/2018')
 
