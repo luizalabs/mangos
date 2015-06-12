@@ -42,4 +42,3 @@ class GetTransactionDataTest(BraspagTestCase):
         self.assertEquals(response['transaction']['masked_credit_card_number'], u'000000******0001')
         self.assertEquals(response['transaction']['holder_name'], u'Jose da Silva')
         self.assertEquals(response['transaction']['expiration_date'], u'05/2018')
-

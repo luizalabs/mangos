@@ -5,9 +5,10 @@ from tornado.httpclient import HTTPError
 
 class BraspagException(Exception):
     """
-    Custom exception
+    Custom exception for Braspag Errors
     """
-    pass
+    def __init__(self, response):
+        self.response = response    
 
 
 class HTTPTimeoutError(HTTPError):

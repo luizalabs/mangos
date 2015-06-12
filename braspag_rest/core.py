@@ -66,14 +66,26 @@ class BaseRequest(object):
             headers=headers
         )
 
+    def format_error(self, error):
+        return {
+            'success': False,
+            'code': error['Code'],
+            'message': error['Message']
+        }
+
+
     @gen.coroutine
     def fetch(self, url, method, payload, **kwargs):
         self.log.warning('Request: %s' % payload)
         try:
             response = yield self.http_client.fetch(self._get_request(url, method, payload, **kwargs))
         except HTTPError as e:
-            self.log.error('No response received.')
-            raise e.code == 599 and HTTPTimeoutError(e.code, e.message) or HTTPError(e.code, e.message)
+            if e.code == 599:
+                raise HTTPTimeoutError(e.code, e.message)
+            if e.code == 400:
+                raise BraspagException(e.response)
+
+            raise HTTPError(e.code, e.message)
 
         self.log.warning('Response code: %s body: %s' % (response.code, response.body))
         raise gen.Return(response)
@@ -120,9 +132,13 @@ class BraspagRequest(BaseRequest):
 
         resource = '/v2/sales/{0}'.format(kwargs.get('transaction_id', ''))
 
-        response = yield self._request(resource, 'GET', kwargs.get('payload'), query=True, **kwargs)
-        response = BraspagResponse.format_get_transaction_data(response)
+        try:
+            response = yield self._request(resource, 'GET', kwargs.get('payload'), query=True, **kwargs)
+        except BraspagException as e:
+            error_body = json.loads(e.response.body)
+            raise gen.Return(self.format_error(error_body))
 
+        response = BraspagResponse.format_get_transaction_data(response)
         raise gen.Return(response)
 
 
