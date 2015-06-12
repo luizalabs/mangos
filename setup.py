@@ -11,13 +11,13 @@ readme = open(os.path.join(cwd, 'README.md')).read()
 
 setup(
     name='mangos',
-    version='0.0.1',
+    version='0.0.2',
     description="Tornado library to consume Braspag REST Web services",
     long_description=readme,
     author='Daniel Urbano',
     author_email='daniel.urbano@luizalabs.com',
     url='https://github.com/luizalabs/mangos',
-    packages=['braspag'],
+    packages=['braspag_rest'],
     test_suite='tests.suite',
     tests_require=['Mock'],
     zip_safe=False,
