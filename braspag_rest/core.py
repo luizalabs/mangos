@@ -69,11 +69,15 @@ class BaseRequest(object):
             headers=headers
         )
 
-    def format_error(self, error):
+    def format_errors(self, errors):
+        errors = [{
+            'code': e['Code'],
+            'message': e['Message']
+        } for e in errors]
+
         return {
             'success': False,
-            'code': error['Code'],
-            'message': error['Message']
+            'errors': errors
         }
 
     @gen.coroutine
@@ -153,7 +157,7 @@ class BraspagRequest(BaseRequest):
             )
         except BraspagException as e:
             error_body = json.loads(e.response.body)
-            raise gen.Return(self.format_error(error_body))
+            raise gen.Return(self.format_errors(error_body))
 
         response = BraspagResponse.format_get_transaction_data(response)
         raise gen.Return(response)
@@ -182,6 +186,9 @@ class BraspagResponse(object):
 
             if 'Amount' in transaction:
                 data['amount'] = int(transaction.get('Amount'))
+
+            if 'VoidedAmount' in transaction:
+                data['voided_amount'] = int(transaction.get('VoidedAmount'))
 
             if 'CardNumber' in credit_card:
                 data['masked_credit_card_number'] = credit_card.get(
