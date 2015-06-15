@@ -1,5 +1,7 @@
-
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
+
+import six
 
 import re
 import codecs
@@ -46,7 +48,7 @@ class RegexpMatcher(object):
             self.data = data_file.read().strip()
 
     def __eq__(self, other):
-        if not isinstance(other, basestring):
+        if not isinstance(other, six.string_types):
             return False
 
         if not re.match(self.data, other):
