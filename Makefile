@@ -7,3 +7,6 @@ coverage:
 
 clean:
 	rm -rf cover/
+
+flake8:
+	@flake8 --show-source braspag_rest
