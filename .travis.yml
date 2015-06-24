@@ -1,5 +1,4 @@
 language: python
-sudo: false
 install:
     - pip install -r requirements-test.txt
 env:
@@ -8,3 +7,8 @@ env:
 
 script:
     - tox -e $TOX_ENV
+script:
+    - make flake8
+    - make test
+notifications:
+    slack: luizalabs:FW6pSzZqP9dbXpBkdWwjbPDZ
