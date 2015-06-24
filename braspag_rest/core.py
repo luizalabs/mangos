@@ -5,7 +5,14 @@ from __future__ import absolute_import
 import json
 import uuid
 import logging
-import urlparse
+
+import six
+
+try:
+    import urlparse
+except ImportError:
+    from urllib.parse import urlparse, urljoin
+
 from datetime import datetime
 
 from .utils import is_valid_guid
@@ -49,9 +56,13 @@ class BaseRequest(object):
         return json.dumps(payload)
 
     def _get_url(self, url, resource):
-        """Return the full URL for a given resource
         """
-        return urlparse.urljoin(url, resource)
+        Return the full URL for a given resource
+        """
+        if six.PY2:
+            return urlparse.urljoin(url, resource)
+        else:
+            return urljoin(url, resource)
 
     def _get_request(self, url, method, payload, **kwargs):
         """Return an instance of HTTPRequest with optionally custom headers.
@@ -93,7 +104,7 @@ class BaseRequest(object):
             if e.code == 400:
                 raise BraspagException(e.response)
 
-            raise HTTPError(e.code, e.message)
+            raise
 
         self.log.warning(
             'Response code: {} body: {}'.format(
@@ -131,7 +142,10 @@ class BraspagRequest(BaseRequest):
         url = self._get_url(url, resource)
 
         response = yield self.fetch(url, method, payload, **kwargs)
-        raise gen.Return(json.loads(response.body))
+        if six.PY2:
+            raise gen.Return(json.loads(response.body))
+        else:
+            raise gen.Return(json.loads(response.body.decode()))
 
     @gen.coroutine
     def get_transaction_data(self, **kwargs):

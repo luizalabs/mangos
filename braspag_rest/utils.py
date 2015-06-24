@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-
+import six
 import string
 
 
@@ -7,7 +7,7 @@ def is_valid_guid(guid):
     VALID_CHARS = string.hexdigits + '-'
     VALID_PARTS_LEN = [8, 4, 4, 4, 12]
 
-    if not isinstance(guid, basestring):
+    if not isinstance(guid, six.string_types):
         guid = unicode(guid)
 
     if not all(c in VALID_CHARS for c in guid):

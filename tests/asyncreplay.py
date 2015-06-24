@@ -6,7 +6,9 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.httpclient import HTTPResponse
 from tornado.httpclient import HTTPRequest
 from tornado.httpclient import HTTPError
-import StringIO
+
+from six import StringIO
+
 import quopri
 import json
 import hashlib
